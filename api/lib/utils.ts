@@ -122,7 +122,7 @@ export const tryJsonParse = <T = any> (s: string, defaultValue?: any): T => {
 
 export const newId = () => `id${Math.floor(Math.random() * (999999 - 1)) + 1}`;
 
-export const toSrcPath = (dirname: string): string => dirname.replace(/[/\\]api[/\\]@dist/, '');
+export const toSrcPath = (dirname: string): string => dirname.replace(/[/\\]dist([/\\])/, '$1');
 
 export const getAsset = (fileName: string, dirname: string = __dirname) => fs.readFileSync(path.join(toSrcPath(dirname), 'asset', fileName), 'utf8');
 

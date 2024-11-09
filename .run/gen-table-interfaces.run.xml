@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="gen-table-interfaces" type="NodeJSConfigurationType" path-to-js-file="dist/@types/tables/-gen-table-interfaces.js" working-dir="$PROJECT_DIR$">
+  <configuration default="false" name="gen-table-interfaces" type="NodeJSConfigurationType" path-to-js-file="dist/api/@types/tables/-gen-table-interfaces.js" working-dir="$PROJECT_DIR$">
     <method v="2" />
   </configuration>
 </component>

@@ -5,19 +5,15 @@
   "productName": "doc-pipe",
   "author": "Вячеслав Макаров <vvmakarov@corp.finam.ru>",
   "private": true,
-  "main": "./dist/start.js",
+  "main": "./dist/api/start.js",
   "scripts": {
-    "start": "node --no-node-snapshot ./dist/start.js",
+    "start": "node --no-node-snapshot ./dist/api/start.js",
     "lint": "eslint --ext .js,.ts,.vue ./",
     "lint:fix": "eslint --fix --ext .js,.ts,.vue,.json ./",
     "patch_node_modules": "node --no-node-snapshot ./patch_node_modules.js",
     "clean": "shx rm -rf ./dist/*",
     "build": "tsc -b ./tsconfig.json",
-    "cb": "npm run patch_node_modules && npm run clean && npm run build",
-    "qd": "node quasar-prepare-color-vars.js && yarn quasar dev",
-    "qb": "node quasar-prepare-color-vars.js && yarn quasar build",
-    "sync-db": "node ./dist/_ones/sync-db/sync-db.js",
-    "init-db": "node ./dist/_ones/sync-db/init-db.js"
+    "cb": "npm run patch_node_modules && npm run clean && npm run build"
   },
   "dependencies": {
     "af-consul": "^4.0.2",
