@@ -1,0 +1,51 @@
+db:
+  postgres:
+    dbs:
+      csbot:
+        label: 'csbot / PROD-DB-1'
+        host: '***'
+        port: 5432
+        database: 'csbot'
+        user: '***'
+        password: '***'
+      person:
+        host: MSA-CEPR01-DB03
+        port: 5432
+        database: Person
+        user: cep_pg
+        password: '***'
+
+openAiClientOptions:
+  baseURL: https://any.com/v1
+  apiKey: '***'
+  apiKeyName: '***'
+
+webServer:
+  originHosts:
+    - localhost
+    - 0.0.0.0
+  permanentToken: '***'
+  serverToken: '***'
+  tokenEncryptKey: '***'
+  tokenLifeTimeSeconds: 60
+
+consul:
+  agent:
+    reg:
+      host: '***'
+      token: '***'
+    dev:
+      token: '***'
+    prd:
+      token: '***'
+  service:
+    instance: "??"
+    noRegOnStart: true
+
+fork:
+  name: DEV
+  bg: white
+  color:
+    primary: "#37d46e"
+    secondary: "#69bef0"
+    accent: '#3772FF'

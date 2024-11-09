@@ -1,0 +1,80 @@
+---
+openapi: "3.0.0"
+info:
+  title: "DOC-PIPE API"
+  #  description: "API endpoints for DOC-PIPE"
+  #  contact:
+  #    name: "Вячеслав Макаров"
+  #    email: "vvmakarov@corp.finam.ru"
+  #    url: "https://git.finam.ru/projects/AIDEV/repos/doc-pipe"
+  #
+  #    swagger.io: https://swagger.io/docs/specification/
+  version: "0.0.91"
+servers:
+  - url: "https://doc-pipe-dev.finam.ru"
+    description: "DEV server"
+  - url: "https://doc-pipe.finam.ru"
+    description: "PROD server"
+  - url: "http://localhost:8866/"
+    description: "Local server"
+
+security:
+  - Token: [ ]
+
+paths:
+  /api/v1/health:
+    get:
+      tags: [ "DOC-PIPE-API" ]
+      summary: "Health Check"
+      description: "Проверка работоспособности сервера, предоставляющего API"
+      responses:
+        200:
+          description: "Сервис жив"
+        default:
+          description: "Сервис не здоров"
+      security: [ ]
+
+  /health:
+    $ref: '#/paths/~1api~1v1~1health'
+
+components:
+  securitySchemes:
+    Token:
+      type: http
+      scheme: bearer
+      bearerFormat: string
+      description: |
+        **Сеансовый токен или постоянный серверный токен**.  
+        Тестовый токен можно запросить у Макарова Вячеслава.   
+
+  schemas:
+
+  parameters:
+    ContentTypeJSONParam:
+      in: header
+      name: Content-Type
+      schema:
+        type: string
+        enum:
+          - application/json
+      required: true
+
+  responses:
+    MissingAuthHeader:
+      description: Missing authorization header
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Missing authorization header
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Unauthorized
+
+tags:
+  - name: "DOC-PIPE-API"

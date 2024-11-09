@@ -1,0 +1,77 @@
+body, html {
+  height: 100%;
+  margin: 0;
+  font-family: "Roboto", "-apple-system", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.views-outer-container {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+}
+
+.views-auth-container {
+  text-align: center;
+  position: absolute;
+  top: calc(38vh - 130px);
+}
+
+.views-auth-container svg {
+  width: 70px;
+  fill: rgba(194, 57, 52, 0.58);
+}
+
+.views-auth-block {
+  border: 1px solid #d0d0d0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.views-input-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.views-input-group label {
+  width: 80px;
+  text-align: left;
+  margin-right: 10px;
+}
+
+.views-input-group input {
+  padding: 5px;
+  width: 200px;
+}
+
+.views-input-group input::placeholder {
+  color: #e5e5e5;
+}
+
+input {
+  outline: none;
+  border: 1px solid #b0b0b0;
+}
+
+input:focus {
+  border: 1px solid #ff5500;
+  /*outline: solid;*/
+  /*outline-width: 1px;*/
+  /*outline-color: #ff5500;*/
+}
+
+.views-button-container {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: end;
+}
+
+.views-button-container button {
+  padding: 3px;
+  width: 105px;
+}

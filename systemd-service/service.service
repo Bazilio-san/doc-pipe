@@ -1,0 +1,19 @@
+[Unit]
+Description=CS BOT
+After=network.target
+# https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#StartLimitIntervalSec=interval
+StartLimitIntervalSec=0
+
+[Service]
+User=root
+WorkingDirectory=/opt/node/doc-pipe
+EnvironmentFile=/opt/node/doc-pipe/.env
+ExecStart=/root/.nvm/versions/node/v20.11.1/bin/node ./dist/start.js
+Restart=always
+RestartSec=3
+# https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#StandardOutput=
+StandardOutput=syslog
+StandardError=syslog
+
+[Install]
+WantedBy=multi-user.target

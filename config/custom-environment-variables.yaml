@@ -1,0 +1,19 @@
+---
+logger:
+  level: LOGGER_LEVEL
+  socketLevel: LOGGER_SOCKET_LEVEL
+
+webServer:
+  port: WS_PORT
+  permanentToken: PERMANENT_TOKEN
+  serverToken: SERVER_TOKEN
+  tokenEncryptKey: TOKEN_ENCRYPT_KEY
+
+openAiClientOptions:
+  baseURL: OPEN_AI_BASE_URL
+  apiKey: OPEN_AI_API_KEY
+  apiKeyName: OPEN_AI_API_KEY_NAME
+
+consul:
+  service:
+    instance: SERVICE_INSTANCE

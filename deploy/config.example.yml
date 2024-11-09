@@ -1,0 +1,8 @@
+branch: master
+pm2restart: yes
+reinstallDependencies: yes
+installDevDependencies: yes
+nodeVersion: 20
+env: prd
+email: vvmakarov@corp.finam.ru
+
