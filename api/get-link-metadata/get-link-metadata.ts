@@ -1,45 +1,42 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { echo } from 'af-echo-ts';
-import urlParser from 'url';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import https from 'https';
 import { sleep } from 'af-tools-ts';
-import { TABLE } from '../constants';
-import { execMAIN, queryRsMAIN } from '../services/db/pg-db';
-import { ICoreDlinkRecord } from '../@types/tables/core-dlink';
+import { URL } from 'url';
+import path from 'path';
+import { shortHash } from 'af-crypto';
 import { mimeTypeMap } from './mime-types-map';
 
 const SOURCE_REQUEST_TIMEOUT_MILLIS = 10_000;
 const SLEEP_TIMEOUT_MILLIS = 300;
 const torProxyAgent = new SocksProxyAgent('socks://dev-ai-proxy.whotrades.net:8888');
 
-const updateLink = async (url: string, values: Partial<ICoreDlinkRecord>): Promise<void> => {
-  const data: string[] = [];
-  const sqlValues: any[] = [url];
-  Object.entries(values).forEach(([fieldName, value]) => {
-    sqlValues.push(value);
-    data.push(`"${fieldName}" = $${sqlValues.length}`);
-  });
-  // @formatter:off
-  const sqlText = `UPDATE ${TABLE.DLINK} SET ${data.join(', ')} WHERE "url" = $1 `;
-  // @formatter:on
-  echo.info(`url: ${url}, ${Object.values(values).join(' | ')}`);
-  await execMAIN({ sqlText, sqlValues });
-};
-
-interface IGetResourceTypeArg {
+export interface IGetResourceTypeArg {
   url: string,
   method?: 'HEAD' | 'GET',
   useProxy?: boolean,
   flag?: boolean,
 }
 
-interface IGetResourceTypeRet {
+export interface IGetResourceTypeRet {
   type?: string,
+  fileName?: string,
   crawlError?: string,
   httpCode?: number,
   useProxy?: boolean
 }
+
+export const getTypeByContentType = (contentType?: string): string => {
+  const ct = (contentType || '').split(';')[0];
+  return mimeTypeMap[ct || ''];
+};
+
+export const getFileNameByUrl = (url: string): string => {
+  const urlObj = new URL(url);
+  return `${urlObj.host}--${path.basename(urlObj.pathname)}--${shortHash(url)}`;
+};
+
 
 const getResourceTypeCore = async (arg: IGetResourceTypeArg): Promise<IGetResourceTypeRet> => {
   const { url, method = 'HEAD', useProxy } = arg;
@@ -65,74 +62,36 @@ const getResourceTypeCore = async (arg: IGetResourceTypeArg): Promise<IGetResour
       requestConfig.httpsAgent = new https.Agent({ rejectUnauthorized: false });
     }
     const response = await axios(requestConfig);
-    const ct = (response.headers['content-type'] || '').split(';')[0];
-    const type = mimeTypeMap[ct || ''];
+    const type = getTypeByContentType(response.headers['content-type']);
     if (!type) {
       echo.warn(`Не удалось определить тип для ${url}`);
     }
-    return { type, httpCode: response.status, useProxy };
+    const fileName = getFileNameByUrl(url);
+    return { type, httpCode: response.status, useProxy, fileName };
   } catch (error: AxiosError | any) {
-    const { message, status, response } = error as AxiosError;
+    const { message, status, response: _r } = error as AxiosError;
     return { crawlError: message, httpCode: status, useProxy };
   }
 };
 
-const getResourceType = async (url: string) => {
+export const getLinkMetadata = async (url: string): Promise<IGetResourceTypeRet> => {
   const arg: IGetResourceTypeArg = { url, method: 'HEAD', useProxy: false };
   let result = await getResourceTypeCore({ ...arg });
   if (!result.crawlError) {
     return result;
   }
-  sleep(SLEEP_TIMEOUT_MILLIS);
+  await sleep(SLEEP_TIMEOUT_MILLIS);
   result = await getResourceTypeCore({ ...arg, method: 'GET' });
   if (!result.crawlError) {
     return result;
   }
   arg.useProxy = true;
-  sleep(SLEEP_TIMEOUT_MILLIS);
+  await sleep(SLEEP_TIMEOUT_MILLIS);
   result = await getResourceTypeCore(arg);
   if (!result.crawlError) {
     return result;
   }
-  sleep(SLEEP_TIMEOUT_MILLIS);
+  await sleep(SLEEP_TIMEOUT_MILLIS);
   result = await getResourceTypeCore({ ...arg, method: 'GET', flag: true });
   return result;
 };
-
-const getLinkList = async () => {
-  const sql = `
-    SELECT *
-    FROM ${TABLE.DLINK}
-    WHERE 1 = 1
-      AND   ("httpCode" != 200 OR type IS NULL)
-    --  AND url = 'https://www.mql5.com/ru/articles/802'
-    LIMIT 1000`;
-  const rows = (await queryRsMAIN<ICoreDlinkRecord>(sql)) || [];
-  const urls = rows.map((r) => r.url);
-
-  const sites: { [dn: string]: Set<string> } = {};
-  urls.forEach((url) => {
-    const { host } = urlParser.parse(url, true);
-    if (host) {
-      if (!sites[host]) {
-        sites[host] = new Set([url]);
-      } else {
-        sites[host].add(url);
-      }
-    }
-  });
-
-  const processLinksGroup = async (urlList: string[]) => {
-    for (let i = 0; i < urlList.length; i++) {
-      const url = urlList[i];
-      const result = await getResourceType(url);
-      await updateLink(url, result);
-    }
-  };
-  const siteLinks = Object.values(sites).map((s) => [...s]);
-
-  await Promise.all(siteLinks.map(processLinksGroup));
-  process.exit();
-};
-
-getLinkList();

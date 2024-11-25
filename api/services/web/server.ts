@@ -6,7 +6,6 @@ import { Server } from 'http';
 import { echo } from 'af-echo-ts';
 import { yellow, green, cyan } from 'af-color';
 import requestIp from 'request-ip';
-import fs from 'fs';
 import socketIO from './socket-io';
 import cors from './cors';
 import { commonREST, requestSourceMW } from './common-functions';

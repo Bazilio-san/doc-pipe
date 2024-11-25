@@ -1,13 +1,7 @@
 import { HttpCrawler, PuppeteerCrawler, Dataset } from 'crawlee';
-import axios, { AxiosRequestConfig } from 'axios';
-import https from 'https';
-import { echo } from 'af-echo-ts';
 import { TABLE } from '../constants';
-import { execMAIN, queryRsMAIN } from '../services/db/pg-db';
+import { queryRsMAIN } from '../services/db/pg-db';
 import { ICoreDlinkRecord } from '../@types/tables/core-dlink';
-import ee from '../services/ee';
-import { mimeTypeMap } from './mime-types-map';
-
 
 const SOURCE_REQUEST_TIMEOUT_MILLIS = 8_000;
 const crawlerHTTP = new HttpCrawler({
@@ -29,20 +23,23 @@ const crawlerHTTP = new HttpCrawler({
   },
 });
 
-
 // PlaywrightCrawler crawls the web using a headless
 // browser controlled by the Playwright library.
 const crawler = new PuppeteerCrawler({
   // Use the requestHandler to process each of the crawled pages.
   async requestHandler (result) {
-    const { request: req, page, enqueueLinks, log, contentType } = result;
+    const { request: req, page, enqueueLinks, log, response } = result;
     // console.log(response);
+    await page.waitForSelector('body');
     const title = await page.title();
+
+    // Retrieve the fully rendered HTML
+    const html = await page.content();
     log.info(`Title of ${req.loadedUrl} is '${title}'`);
 
     // Save results as JSON to ./storage/datasets/default
-    await Dataset.pushData({ title, url: req.loadedUrl });
-    console.log(contentType, req.loadedUrl);
+    await Dataset.pushData({ title, url: req.loadedUrl, html });
+    console.log(req.loadedUrl);
     // Extract links from the current page
     // and add them to the crawling queue.
     // await enqueueLinks();
@@ -63,7 +60,7 @@ const getLinkList = async () => {
   const sql = `
     SELECT *
     FROM ${TABLE.DLINK}
-    WHERE type is NOT NULL
+    WHERE type = 'html'
     --AND url = 'https://www.mql5.com/ru/articles/802'
     LIMIT 1000`;
   const rows = (await queryRsMAIN<ICoreDlinkRecord>(sql)) || [];

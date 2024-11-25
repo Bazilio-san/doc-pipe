@@ -1,7 +1,7 @@
 const { name, productName, version, description } = require('../package.json');
 const { host, port } = require('./local.ws-host-port');
 
-const commonTimeout = 3_600_000; // 1ч
+// const commonTimeout = 3_600_000; // 1ч
 
 module.exports = {
   name,

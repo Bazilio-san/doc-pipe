@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="update-link-metadata.ts" type="TypeScriptProgramRunner" factoryName="TypeScript">
+    <module name="doc-pipe" />
+    <option name="interpreterRef" value="project" />
+    <option name="tsnodePackageRef" value="D:\work\PROJ\AI\doc-pipe\node_modules\ts-node" />
+    <option name="enabledTsNodeEsmLoader" value="false" />
+    <option name="interpreterOptions" value="" />
+    <option name="workingDirectory" value="D:\work\PROJ\AI\doc-pipe" />
+    <option name="tsconfigFile" value="" />
+    <option name="extraTypeScriptOptions" value="" />
+    <option name="scriptName" value="$PROJECT_DIR$/api/get-link-metadata/update-link-metadata.ts" />
+    <option name="programParameters" value="" />
+    <option name="tsnodePackage" value="D:\work\PROJ\AI\doc-pipe\node_modules\ts-node" />
+    <method v="2" />
+  </configuration>
+</component>
