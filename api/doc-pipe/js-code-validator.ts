@@ -1,24 +1,22 @@
 /* eslint-disable no-new-func,no-restricted-syntax */
-import * as esprima from 'esprima';
-// Для обхода AST используем estraverse
+import * as espree from 'espree';
 import * as estraverse from 'estraverse';
 import { logger } from '../services/logger';
 
 const unsafePatterns = [
-  /while\s*\(true\)/, // Запретить бесконечные циклы
+  /while\s*\(true\)/, // Prohibit infinite loops
 ];
 
 function validateUserCode (code) {
   for (const pattern of unsafePatterns) {
     if (pattern.test(code)) {
-      throw new Error(`Найдено небезопасное выражение: ${pattern}`);
+      throw new Error(`Unsafe expression found: ${pattern}`);
     }
   }
 }
 
 export const isCodeSafe = (userCode: string): boolean => {
   validateUserCode(userCode);
-  // Список запрещенных идентификаторов
   const bannedIdentifiers: string[] = [
     'process',
     'require',
@@ -36,7 +34,7 @@ export const isCodeSafe = (userCode: string): boolean => {
   ];
 
   try {
-    const ast = esprima.parseScript(userCode);
+    const ast = espree.parse(userCode, { ecmaVersion: 'latest' });
 
     let isSafe = true;
 
@@ -44,10 +42,9 @@ export const isCodeSafe = (userCode: string): boolean => {
       enter (node) {
         if (node.type === 'Identifier' && bannedIdentifiers.includes(node.name)) {
           isSafe = false;
-          this.break(); // Останавливаем обход при нахождении запрещенного идентификатора
+          this.break();
         }
 
-        // Проверка использования нового конструктора Function
         if (
           node.type === 'NewExpression'
           && node.callee.type === 'Identifier'
@@ -57,7 +54,6 @@ export const isCodeSafe = (userCode: string): boolean => {
           this.break();
         }
 
-        // Проверка вызова eval
         if (
           node.type === 'CallExpression'
           && node.callee.type === 'Identifier'
@@ -67,7 +63,6 @@ export const isCodeSafe = (userCode: string): boolean => {
           this.break();
         }
 
-        // Проверка доступа к свойствам global или process
         if (
           node.type === 'MemberExpression'
           && node.object.type === 'Identifier'
@@ -76,15 +71,14 @@ export const isCodeSafe = (userCode: string): boolean => {
           isSafe = false;
           this.break();
         }
-
-        // Дополнительные проверки можно добавить здесь
       },
     });
 
     return isSafe;
   } catch (err) {
     logger.error(err);
-    // Если произошла ошибка при парсинге, считаем код небезопасным
     return false;
   }
 };
+
+export const wrapCode = (s: string) => `const fn = async (page, request, resultData) => {\n${s}\n}`;

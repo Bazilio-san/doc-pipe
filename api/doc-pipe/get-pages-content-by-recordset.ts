@@ -8,7 +8,7 @@ import stealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { PuppeteerCrawler, RequestList } from 'crawlee';
 import { ICoreDlinkRecord } from '../@types/tables/core-dlink';
 import { getFileNameByUrl, getTypeByContentType } from '../get-link-metadata/get-link-metadata';
-import { isCodeSafe } from './js-code-validator';
+import { isCodeSafe, wrapCode } from './js-code-validator';
 
 // First, we tell puppeteer-extra to use the plugin (or plugins) we want.
 // Certain plugins might have options you can pass in - read up on their documentation!
@@ -37,7 +37,15 @@ const saveFile = async (fileName: string, type: string, data: ArrayBuffer): Prom
   await writeFile(filePath, Buffer.from(data));
   return filePath;
 };
-const getScreenshotPath = (fileName: string, type: string): string => path.normalize(path.join(BASE_FILE_DIR, `${fileName}.${type}`));
+
+const saveHtml = async (fileName: string, content: string): Promise<string> => {
+  const writeFile = util.promisify(fs.writeFile);
+  const filePath = path.normalize(path.join(BASE_FILE_DIR, `${fileName}.html`));
+  await writeFile(filePath, content);
+  return filePath;
+};
+
+const getContentPath = (fileName: string, type: string): string => path.normalize(path.join(BASE_FILE_DIR, `${fileName}.${type}`));
 
 const js4print = (s: string) => `\n\`\`\`jsvaScript\n${s}\n\`\`\``;
 
@@ -48,7 +56,7 @@ const getSnippet1 = () => {
   return code;
 };
 
-export const getPagesByRecordset = async (links: ICoreDlinkRecord[]) => {
+export const getPagesContentByRecordset = async (links: ICoreDlinkRecord[]) => {
   // Создаем RequestList из списка ссылок
   const requestList = await RequestList.open('start-urls', links.map((link) => ({
     url: link.url,
@@ -82,15 +90,14 @@ export const getPagesByRecordset = async (links: ICoreDlinkRecord[]) => {
       log.info(`Обработка ${url}`);
 
       ({ type, fileName } = await getTypeAndFileName(link, response));
-      if (!type) {
+      if (!type || !fileName) {
         return;
       }
 
+      // =================== PDF, DOCX, XLSX ==========
+
       if (['pdf', 'docx', 'xlsx'].includes(type || '')) {
         // Скачиваем и сохраняем PDF или DOCX файл
-        if (!fileName) {
-          return;
-        }
         try {
           const resp = await axios.get<ArrayBuffer>(url, { responseType: 'arraybuffer' });
           const filePath = await saveFile(fileName, type, resp.data);
@@ -101,11 +108,14 @@ export const getPagesByRecordset = async (links: ICoreDlinkRecord[]) => {
         return;
       }
 
+      // =================== HTML ==========
+
       if (type === 'html') {
+        let html = '';
         const codeFragment = link.js || getSnippet1();
         // Выполняем заданный фрагмент кода JavaScript
         if (codeFragment) {
-          if (!isCodeSafe(`const page = {};\nconst request = {};\nconst resultData = {};\n${codeFragment}`)) {
+          if (!isCodeSafe(wrapCode(codeFragment))) {
             // Предупреждение: выполнение произвольного кода может быть небезопасно.
             // Убедитесь, что codeFragment исходит из доверенного источника.
             log.error(`Пользовательский JS код для ссылки ${url} (id: ${link.linkId}) не безопасен:${js4print(codeFragment)}`);
@@ -113,19 +123,39 @@ export const getPagesByRecordset = async (links: ICoreDlinkRecord[]) => {
           }
           try {
             const resultData: any = {};
-            const func = new Function('page', 'request', 'resultData', codeFragment) as (page: any, request: any, resultData: any) => Promise<void>;
+            const func = new Function('page', 'request', 'resultData', `return (async () => {\n${codeFragment}\n})();`) as (page: any, request: any, resultData: any) => Promise<void>;
             await func(page, request, resultData);
+            html = resultData.content;
           } catch (error: any) {
             log.error(`Ошибка при выполнении codeFragment: ${error.message}`);
           }
         }
+        const { screenshotSelector } = link;
+        if (screenshotSelector) {
+          let screenshot: Uint8Array | undefined;
+          if (screenshotSelector === 'html') {
+            screenshot = await page.screenshot({ fullPage: true, path: getContentPath(fileName, 'jpg') });
+          } else {
+            // Ожидание появления элемента на странице
+            await page.waitForSelector(screenshotSelector, { timeout: 10_000 });
+            // Поиск элемента
+            const element = await page.$(screenshotSelector);
+            if (element) {
+              // Сохранение скриншота элемента
+              screenshot = await element.screenshot({ path: getContentPath(fileName, 'jpg') });
+              log.info(`Screenshot of the element saved to ${fileName}`);
+            } else {
+              log.warning(`Element not found for selector: ${screenshotSelector}`);
+            }
+          }
+          if (screenshot) {
+            console.log(1);
+          }
+        }
 
-        const screenshot = await page.screenshot({ fullPage: true, path: getScreenshotPath(fileName || 'foo', 'jpg') });
-
-        // Сохраняем страницу в PDF
-        const pdfFileName = `${fileName}.pdf`;
-        await page.pdf({ path: pdfFileName });
-        log.info(`Сохранен PDF ${pdfFileName}`);
+        html = html || await page.content();
+        await saveHtml(fileName, html);
+        log.info(`Сохранен HTML ${fileName}`);
         return;
       }
       log.warning(`Неподдерживаемый тип содержания источника: ${type}`);

@@ -37,7 +37,6 @@ export const getFileNameByUrl = (url: string): string => {
   return `${urlObj.host}--${path.basename(urlObj.pathname)}--${shortHash(url)}`;
 };
 
-
 const getResourceTypeCore = async (arg: IGetResourceTypeArg): Promise<IGetResourceTypeRet> => {
   const { url, method = 'HEAD', useProxy } = arg;
   try {
