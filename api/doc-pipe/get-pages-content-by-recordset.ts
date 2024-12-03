@@ -1,53 +1,17 @@
 /* eslint-disable no-new-func */
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import util from 'util';
 import axios from 'axios';
 import puppeteerExtra from 'puppeteer-extra';
 import stealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { PuppeteerCrawler, RequestList } from 'crawlee';
 import { ICoreDlinkRecord } from '../@types/tables/core-dlink';
-import { getFileNameByUrl, getTypeByContentType } from '../get-link-metadata/get-link-metadata';
 import { isCodeSafe, wrapCode } from './js-code-validator';
+import { getContentPath, getTypeAndFileName, js4print, saveContentToDb } from './storage-lib';
 
 // First, we tell puppeteer-extra to use the plugin (or plugins) we want.
 // Certain plugins might have options you can pass in - read up on their documentation!
 puppeteerExtra.use(stealthPlugin());
-
-const getTypeAndFileName = async (link: ICoreDlinkRecord, response: any): Promise<{ type: string | null | undefined, fileName: string | undefined }> => {
-  let { type, fileName } = link;
-  if (type && fileName) {
-    return { type, fileName };
-  }
-  const contentType = response?.headers()['content-type'];
-  type = getTypeByContentType(contentType) || contentType;
-  fileName = getFileNameByUrl(link.url);
-  return { type, fileName };
-};
-
-const BASE_FILE_DIR_NAME = '_files';
-const BASE_FILE_DIR = path.resolve(path.join(process.cwd(), BASE_FILE_DIR_NAME));
-if (!fs.existsSync(BASE_FILE_DIR)) {
-  fs.ensureDirSync(BASE_FILE_DIR);
-}
-
-const saveFile = async (fileName: string, type: string, data: ArrayBuffer): Promise<string> => {
-  const writeFile = util.promisify(fs.writeFile);
-  const filePath = path.normalize(path.join(BASE_FILE_DIR, `${fileName}.${type}`));
-  await writeFile(filePath, Buffer.from(data));
-  return filePath;
-};
-
-const saveHtml = async (fileName: string, content: string): Promise<string> => {
-  const writeFile = util.promisify(fs.writeFile);
-  const filePath = path.normalize(path.join(BASE_FILE_DIR, `${fileName}.html`));
-  await writeFile(filePath, content);
-  return filePath;
-};
-
-const getContentPath = (fileName: string, type: string): string => path.normalize(path.join(BASE_FILE_DIR, `${fileName}.${type}`));
-
-const js4print = (s: string) => `\n\`\`\`jsvaScript\n${s}\n\`\`\``;
 
 // --- VVR ----
 const getSnippet1 = () => {
@@ -83,10 +47,11 @@ export const getPagesContentByRecordset = async (links: ICoreDlinkRecord[]) => {
     // The function accepts a single parameter, which is an object with the following fields:
     // - request: an instance of the Request class with information such as URL and HTTP method
     // - page: Puppeteer's Page object (see https://pptr.dev/#show=api-class-page)
-    async requestHandler ({ request, page, response, log, pushData, enqueueLinks }) {
+    async requestHandler ({ request, page, response, log }) {
       const { url } = request;
       const { link } = request.userData as { link: ICoreDlinkRecord };
       let { type, fileName } = link;
+      const { linkId = 0 } = link;
       log.info(`Обработка ${url}`);
 
       ({ type, fileName } = await getTypeAndFileName(link, response));
@@ -100,10 +65,9 @@ export const getPagesContentByRecordset = async (links: ICoreDlinkRecord[]) => {
         // Скачиваем и сохраняем PDF или DOCX файл
         try {
           const resp = await axios.get<ArrayBuffer>(url, { responseType: 'arraybuffer' });
-          const filePath = await saveFile(fileName, type, resp.data);
-          log.info(`Сохранен файл ${filePath}`);
+          await saveContentToDb(linkId, fileName, type, resp.data);
         } catch (error: any) {
-          log.error(`Ошибка при скачивании файла: ${error.message}`);
+          log.error(`Error downloading file: ${error.message}`);
         }
         return;
       }
@@ -154,8 +118,7 @@ export const getPagesContentByRecordset = async (links: ICoreDlinkRecord[]) => {
         }
 
         html = html || await page.content();
-        await saveHtml(fileName, html);
-        log.info(`Сохранен HTML ${fileName}`);
+        await saveContentToDb(linkId, fileName, type, html);
         return;
       }
       log.warning(`Неподдерживаемый тип содержания источника: ${type}`);
@@ -169,7 +132,3 @@ export const getPagesContentByRecordset = async (links: ICoreDlinkRecord[]) => {
   // Запускаем краулер
   await crawler.run();
 };
-// const element = await page.$('selector'); // Replace 'selector' with the actual CSS selector
-// if (element) {
-//   await element.screenshot({ path: 'element.png' });
-// }
