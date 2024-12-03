@@ -130,22 +130,22 @@ export const getPagesContentByRecordset = async (links: ICoreDlinkRecord[]) => {
             log.error(`Ошибка при выполнении codeFragment: ${error.message}`);
           }
         }
-        const { screenshotSelector } = link;
-        if (screenshotSelector) {
+        const { contentSelector } = link;
+        if (contentSelector) {
           let screenshot: Uint8Array | undefined;
-          if (screenshotSelector === 'html') {
+          if (contentSelector === 'html') {
             screenshot = await page.screenshot({ fullPage: true, path: getContentPath(fileName, 'jpg') });
           } else {
             // Ожидание появления элемента на странице
-            await page.waitForSelector(screenshotSelector, { timeout: 10_000 });
+            await page.waitForSelector(contentSelector, { timeout: 10_000 });
             // Поиск элемента
-            const element = await page.$(screenshotSelector);
+            const element = await page.$(contentSelector);
             if (element) {
               // Сохранение скриншота элемента
               screenshot = await element.screenshot({ path: getContentPath(fileName, 'jpg') });
               log.info(`Screenshot of the element saved to ${fileName}`);
             } else {
-              log.warning(`Element not found for selector: ${screenshotSelector}`);
+              log.warning(`Element not found for selector: ${contentSelector}`);
             }
           }
           if (screenshot) {
