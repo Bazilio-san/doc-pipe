@@ -2,7 +2,7 @@ import { getLinksFromDb } from './get-links-from-db';
 import { getPagesContentByRecordset } from './get-pages-content-by-recordset';
 import { saveContentFromDbToDisk } from './storage-lib';
 
-const getLinkList = async () => {
+export const getLinkList = async () => {
   // Пример получения HTML и сохранения в поле content
   const { rows = [] } = await getLinksFromDb({ where: ` "isDownload" = true AND type = 'html' `, limit: 1, orderBy: '"linkId"' });
   await getPagesContentByRecordset(rows || []);
