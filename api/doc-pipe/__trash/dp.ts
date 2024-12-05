@@ -1,7 +1,7 @@
 import { HttpCrawler, PuppeteerCrawler, Dataset } from 'crawlee';
-import { TABLE } from '../constants';
-import { queryRsMAIN } from '../services/db/pg-db';
-import { ICoreDlinkRecord } from '../@types/tables/core-dlink';
+import { TABLE } from '../../constants';
+import { queryRsMAIN } from '../../services/db/pg-db';
+import { ICoreDlinkRecord } from '../../@types/tables/core-dlink';
 
 const SOURCE_REQUEST_TIMEOUT_MILLIS = 8_000;
 const crawlerHTTP = new HttpCrawler({

@@ -19,12 +19,12 @@ servers:
     description: "Local server"
 
 security:
-  - Token: [ ]
+  - Token: []
 
 paths:
   /api/v1/health:
     get:
-      tags: [ "DOC-PIPE-API" ]
+      tags: ["DOC-PIPE-API"]
       summary: "Health Check"
       description: "Проверка работоспособности сервера, предоставляющего API"
       responses:
@@ -32,10 +32,86 @@ paths:
           description: "Сервис жив"
         default:
           description: "Сервис не здоров"
-      security: [ ]
+      security: []
 
   /health:
-    $ref: '#/paths/~1api~1v1~1health'
+    $ref: "#/paths/~1api~1v1~1health"
+
+  /api/v1/doc-pipe/clean:
+    post:
+      tags: ["DOC-PIPE-API"]
+      summary: "Очистка ошибок страниц"
+      description: "Очистка ошибок для переданных страниц чтобы вернуть их в обход"
+      requestBody:
+        description: "Передаваемые параметры"
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pagesIds:
+                  type: array
+                  items: integer
+                blockId:
+                  type: integer
+      responses:
+        200:
+          description: "Ошибки успешно очищены"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: success
+        422:
+          description: "Ошибка в параметрах body"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Unprocessable Entity
+        default:
+          description: "Внутрення ошибка сервера"
+
+  /api/v1/doc-pipe/crawl:
+    post:
+      tags: ["DOC-PIPE-API"]
+      summary: "Запуск обхода страниц"
+      description: "Обход страниц по перееданным параметрам, testMode позволяет автоматически очистить все ошибки переданных страниц перед запуском"
+      requestBody:
+        description: "Передаваемые параметры"
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                crawlType: 
+                  type: all, bulk
+                pagesIds:
+                  type: array
+                  items: integer
+                blockId:
+                  type: integer
+                testMode:
+                  type: boolean
+      responses:
+        200:
+          description: "Ошибки успешно очищены"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: success
+        422:
+          description: "Ошибка в параметрах body"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Unprocessable Entity
+        default:
+          description: "Внутрення ошибка сервера"
 
 components:
   securitySchemes:
@@ -45,7 +121,7 @@ components:
       bearerFormat: string
       description: |
         **Сеансовый токен или постоянный серверный токен**.  
-        Тестовый токен можно запросить у Макарова Вячеслава.   
+        Тестовый токен можно запросить у Макарова Вячеслава.
 
   schemas:
 

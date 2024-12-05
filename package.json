@@ -7,7 +7,7 @@
   "private": true,
   "main": "./dist/api/start.js",
   "scripts": {
-    "start": "node --no-node-snapshot ./dist/api/doc-pipe/init.js",
+    "start": "node --no-node-snapshot ./dist/api/start.js",
     "lint": "eslint --ext .js,.ts,.vue ./",
     "lint:fix": "eslint --fix --ext .js,.ts,.vue,.json ./",
     "patch_node_modules": "node --no-node-snapshot ./patch_node_modules.js",

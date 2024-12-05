@@ -5,6 +5,7 @@ import * as fs from 'fs-extra';
 import { ICoreDlinkRecord } from '../@types/tables/core-dlink';
 import { getFileNameByUrl, getTypeByContentType } from '../get-link-metadata/get-link-metadata';
 import { queryMAIN } from '../services/db/pg-db';
+import { TABLE } from '../constants';
 
 export const getTypeAndFileName = async (link: ICoreDlinkRecord, response: any): Promise<{ type: string | null | undefined, fileName: string | undefined }> => {
   let { type, fileName } = link;
@@ -70,6 +71,42 @@ export const saveContentToDb = async (
   await queryMAIN(`---
     UPDATE core.dlink SET content = $1, type = '${type}', "fileName" = '${fileName}' WHERE "linkId" = ${linkId}`, [content]);
   echo.info(`Содержимое ссылки сохранено в БД для #${linkId} (${fileName}.${type})`);
+};
+
+export const updateLinkCrawlErrorInDb = async (arg: {
+  crawlError: string | null,
+  where: string,
+  limit?: number,
+  orderBy?: string
+}): Promise<any | never[]> => {
+  const { crawlError, where, limit, orderBy } = arg;
+  const sql = `---
+    UPDATE ${TABLE.DLINK} 
+    SET "crawlError" = $1
+    ${where ? `WHERE ${where}` : ''} 
+    ${orderBy ? `ORDER BY ${orderBy}` : ''} 
+    ${limit ? `LIMIT ${limit}` : ''}
+  `;
+  const rows = (await queryMAIN<ICoreDlinkRecord>(sql, [crawlError])) || [];
+  return rows;
+};
+
+export const updateLinkHttpCodeInDb = async (arg: {
+  crawlError: string | null,
+  where: string,
+  limit?: number,
+  orderBy?: string
+}): Promise<any | never[]> => {
+  const { crawlError, where, limit, orderBy } = arg;
+  const sql = `---
+    UPDATE ${TABLE.DLINK} 
+    SET "htmlCode" = $1
+    ${where ? `WHERE ${where}` : ''} 
+    ${orderBy ? `ORDER BY ${orderBy}` : ''} 
+    ${limit ? `LIMIT ${limit}` : ''}
+  `;
+  const rows = (await queryMAIN<ICoreDlinkRecord>(sql, [crawlError])) || [];
+  return rows;
 };
 
 export const getContentPath = (fileName: string, type: string): string => path.normalize(path.join(BASE_FILE_DIR, `${fileName}.${type}`));

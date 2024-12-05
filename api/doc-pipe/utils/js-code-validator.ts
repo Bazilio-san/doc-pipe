@@ -1,7 +1,7 @@
 /* eslint-disable no-new-func,no-restricted-syntax */
 import * as espree from 'espree';
 import * as estraverse from 'estraverse';
-import { logger } from '../services/logger';
+import { logger } from '../../services/logger';
 
 const unsafePatterns = [
   /while\s*\(true\)/, // Prohibit infinite loops

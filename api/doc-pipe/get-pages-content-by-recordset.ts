@@ -4,20 +4,10 @@ import puppeteerExtra from 'puppeteer-extra';
 import stealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { PuppeteerCrawler, RequestList } from 'crawlee';
 import { ICoreDlinkRecord } from '../@types/tables/core-dlink';
-import { isCodeSafe, wrapCode } from './js-code-validator';
-import { getTypeAndFileName, js4print, saveContentToDb } from './storage-lib';
-import { updateLinkCrawlErrorInDb } from './update-link-in-db';
+import { isCodeSafe, wrapCode } from './utils/js-code-validator';
+import { getTypeAndFileName, js4print, saveContentToDb, updateLinkCrawlErrorInDb } from './storage-lib';
 
-// First, we tell puppeteer-extra to use the plugin (or plugins) we want.
-// Certain plugins might have options you can pass in - read up on their documentation!
 puppeteerExtra.use(stealthPlugin());
-
-// --- VVR ----
-// const getSnippet1 = () => {
-//   let code = fs.readFileSync(path.join(__dirname, 'snippet1.js'), { encoding: 'utf8' });
-//   code = code.split(/\/\/ *-+ *code *-+[\n\r]+/i)[1];
-//   return code;
-// };
 
 const pageScrapper = async ({ request, page, response, log }) => {
   const { url } = request;
@@ -33,7 +23,7 @@ const pageScrapper = async ({ request, page, response, log }) => {
     return;
   }
 
-  // =================== PDF, DOCX, XLSX ==========
+  // ============== PDF, DOCX, XLSX ==============
 
   if (['pdf', 'docx', 'xlsx'].includes(type || '')) {
     // Скачиваем и сохраняем PDF или DOCX файл
@@ -47,7 +37,7 @@ const pageScrapper = async ({ request, page, response, log }) => {
     return;
   }
 
-  // =================== HTML ==========
+  // =================== HTML =====================
 
   if (type === 'html') {
     let html = '';
@@ -116,6 +106,15 @@ const pageScrapper = async ({ request, page, response, log }) => {
   log.warning(`Неподдерживаемый тип содержания источника: ${type}`);
 };
 
+// let crawler: null | PuppeteerCrawler = null;
+
+// export const stopCrawl = async () => {
+//   if (crawler) {
+//     await crawler.teardown();
+//     crawler = null;
+//   }
+// };
+
 export const getPagesContentByRecordset = async (links: ICoreDlinkRecord[]) => {
   // Создаем RequestList из списка ссылок
   const requestList = await RequestList.open('start-urls', links.map((link) => ({
@@ -137,16 +136,15 @@ export const getPagesContentByRecordset = async (links: ICoreDlinkRecord[]) => {
       // !!! You need to specify this option to tell Crawlee to use puppeteer-extra as the launcher !!!
       launcher: puppeteerExtra,
     },
-    // ограничение страниц дял кроулинга
-    // maxRequestsPerCrawl: 50,
-    async errorHandler ({ request, page, response, log }) {
+    // Костыль для crawlee, игнорирование navigation timeout
+    async errorHandler({ request, page, response, log }) {
       await pageScrapper({ request, page, response, log });
     },
-    async requestHandler ({ request, page, response, log }) {
+    async requestHandler({ request, page, response, log }) {
       await pageScrapper({ request, page, response, log });
     },
     // Неудачное открытие страницы
-    async failedRequestHandler ({ request, log }) {
+    async failedRequestHandler({ request, log }) {
       const { link } = request.userData as { link: ICoreDlinkRecord };
       const { linkId = 0 } = link;
       await updateLinkCrawlErrorInDb({ crawlError: `Запрос ${request.url} потерпел ошибку слишком много раз`, where: ` "linkId" = ${linkId} ` });

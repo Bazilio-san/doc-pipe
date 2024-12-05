@@ -1,6 +1,6 @@
 import * as fs from 'fs-extra';
-import { isCodeSafe } from './js-code-validator';
-import { logger } from '../services/logger';
+import { isCodeSafe } from '../utils/js-code-validator';
+import { logger } from '../../services/logger';
 
 const js4print = (s: string) => `\n\`\`\`javaScript\n${s}\n\`\`\``;
 
